@@ -1,0 +1,1 @@
+import{c as e,p as t,s as n}from"./button-ey2f2UkT.js";var r=t(e(),1),i=n(),a=(0,r.createContext)(),o=({children:e})=>{let[t,n]=(0,r.useState)(null);return(0,i.jsx)(a.Provider,{value:{bookingResult:t,setBookingResult:n},children:e})};export{o as n,a as t};
