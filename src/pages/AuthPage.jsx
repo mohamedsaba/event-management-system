@@ -21,16 +21,9 @@ const tabAnimation = {
 }
 
 export default function AuthPage() {
-  const [attempts, setAttempts] = useState(() => {
-    return Number(localStorage.getItem("login_attempts")) || 0;
-  });
-  const [isLocked, setIsLocked] = useState(() => {
-    const lockUntil = localStorage.getItem("login_lock_until");
-    if (lockUntil && new Date(lockUntil) > new Date()) {
-      return true;
-    }
-    return false;
-  });
+  const [attempts, setAttempts] = useState(0);
+  const [lockUntil, setLockUntil] = useState(null);
+  const isLocked = lockUntil !== null && lockUntil > Date.now();
   const { login, signup, user } = useAuth();
   const navigate = useNavigate()
   const location = useLocation()
@@ -49,27 +42,19 @@ export default function AuthPage() {
   }, [user, navigate, location]);
 
   useEffect(() => {
-    if (isLocked) {
-      const lockUntil = localStorage.getItem("login_lock_until");
-      if (lockUntil) {
-        const remaining = new Date(lockUntil).getTime() - new Date().getTime();
-        if (remaining > 0) {
-          const timer = setTimeout(() => {
-            setIsLocked(false);
-            localStorage.removeItem("login_lock_until");
-            localStorage.setItem("login_attempts", "0");
-            setAttempts(0);
-          }, remaining);
-          return () => clearTimeout(timer);
-        } else {
-          setIsLocked(false);
-          localStorage.removeItem("login_lock_until");
-          localStorage.setItem("login_attempts", "0");
-          setAttempts(0);
-        }
-      }
+    if (!lockUntil) return;
+    const remaining = lockUntil - Date.now();
+    if (remaining <= 0) {
+      setLockUntil(null);
+      setAttempts(0);
+      return;
     }
-  }, [isLocked]);
+    const timer = setTimeout(() => {
+      setLockUntil(null);
+      setAttempts(0);
+    }, remaining);
+    return () => clearTimeout(timer);
+  }, [lockUntil]);
 
   const signInForm = useForm({
     resolver: zodResolver(signInSchema),
@@ -93,9 +78,8 @@ export default function AuthPage() {
       const response = await login(data.email, data.password);
       const user = response.user;
       
-      setAttempts(0); 
-      localStorage.setItem("login_attempts", "0");
-      localStorage.removeItem("login_lock_until");
+      setAttempts(0);
+      setLockUntil(null);
       
       toast.success(`Welcome back, ${user.username || user.email}!`, { id: toastId });
 
@@ -111,19 +95,17 @@ export default function AuthPage() {
       }, 150);
 
     } catch (error) {
-      toast.error("Invalid credentials", { id: toastId });
-      
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      localStorage.setItem("login_attempts", newAttempts.toString());
+      const errorMsg = error.response?.data?.message || "Invalid credentials";
+      toast.error(errorMsg, { id: toastId });
 
-      if (newAttempts >= 5) {
-        setIsLocked(true);
-        const lockDuration = 5 * 60 * 1000;
-        const lockUntil = new Date(Date.now() + lockDuration).toISOString();
-        localStorage.setItem("login_lock_until", lockUntil);
-        toast.error("Security Lock: Too many attempts. Try again in 5 minutes.");
-      }
+      setAttempts((prev) => {
+        const newAttempts = prev + 1;
+        if (newAttempts >= 5) {
+          setLockUntil(Date.now() + 5 * 60 * 1000);
+          toast.error("Too many failed attempts. Try again in 5 minutes.");
+        }
+        return newAttempts;
+      });
     }
   };
 

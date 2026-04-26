@@ -27,14 +27,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || "Something went wrong";
+    const url = error.config?.url || "";
+    const isAuthRequest = url.startsWith("/auth/");
 
-    // If the token is expired or invalid (401), force logout
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem("token");
       toast.error("Session expired. Please log in again.");
       window.location.hash = "#/auth";
-    } else {
+    } else if (!isAuthRequest) {
+      const message = error.response?.data?.message || "Something went wrong";
       toast.error(message);
     }
 
