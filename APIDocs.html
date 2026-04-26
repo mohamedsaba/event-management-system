@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Venuva API Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #20253200;
+    --surface: #1e2330;
+    --surface2: #252c3d;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8ecf4;
+    --muted: #7a8299;
+    --muted2: #4e566b;
+
+    --get: #3ecf8e;
+    --get-bg: rgba(62,207,142,0.1);
+    --get-border: rgba(62,207,142,0.25);
+
+    --post: #5b8af5;
+    --post-bg: rgba(91,138,245,0.1);
+    --post-border: rgba(91,138,245,0.25);
+
+    --put: #f0a050;
+    --put-bg: rgba(240,160,80,0.1);
+    --put-border: rgba(240,160,80,0.25);
+
+    --delete: #f56565;
+    --delete-bg: rgba(245,101,101,0.1);
+    --delete-border: rgba(245,101,101,0.25);
+
+    --admin: #b987f5;
+    --organizer: #5bc8f5;
+    --attendee: #f5d05b;
+    --public-c: #3ecf8e;
+    --auth-c: #f58b5b;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ---- LAYOUT ---- */
+  .wrapper { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .main {
+    flex: 1;
+    margin-left: 260px;
+    padding: 0 2.5rem 4rem;
+    max-width: 960px;
+  }
+
+  /* ---- SIDEBAR ---- */
+  .logo {
+    padding: 1.5rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .logo-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .nav-group { margin: 0.25rem 0; }
+
+  .nav-group-label {
+    padding: 0.6rem 1.25rem 0.3rem;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--muted2);
+    text-transform: uppercase;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.45rem 1.25rem;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 0;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .nav-link.active { color: var(--text); background: rgba(255,255,255,0.06); border-left: 2px solid var(--post); }
+
+  .nav-method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 5px;
+    border-radius: 3px;
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .nav-method.GET { background: var(--get-bg); color: var(--get); }
+  .nav-method.POST { background: var(--post-bg); color: var(--post); }
+  .nav-method.PUT { background: var(--put-bg); color: var(--put); }
+  .nav-method.DELETE { background: var(--delete-bg); color: var(--delete); }
+
+  /* ---- MAIN CONTENT ---- */
+  .header {
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+
+  .header-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--post);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+  }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .header-desc {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 0.75rem;
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .meta-item strong {
+    color: var(--text);
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  /* ---- LEGEND ---- */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ---- SECTION ---- */
+  .section {
+    margin-bottom: 4rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .section-base {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ---- ENDPOINT CARD ---- */
+  .endpoint {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .endpoint:hover { border-color: var(--border2); }
+
+  .endpoint-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .method-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    min-width: 52px;
+    text-align: center;
+    border: 1px solid transparent;
+  }
+
+  .method-badge.GET { background: var(--get-bg); color: var(--get); border-color: var(--get-border); }
+  .method-badge.POST { background: var(--post-bg); color: var(--post); border-color: var(--post-border); }
+  .method-badge.PUT { background: var(--put-bg); color: var(--put); border-color: var(--put-border); }
+  .method-badge.DELETE { background: var(--delete-bg); color: var(--delete); border-color: var(--delete-border); }
+
+  .endpoint-meta { flex: 1; }
+
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .endpoint-path .param { color: var(--put); }
+  .endpoint-path .query { color: var(--muted); }
+
+  .endpoint-summary {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .endpoint-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 100px;
+    letter-spacing: 0.03em;
+  }
+
+  .badge.public { background: rgba(62,207,142,0.12); color: var(--public-c); }
+  .badge.auth { background: rgba(245,139,91,0.12); color: var(--auth-c); }
+  .badge.admin { background: rgba(185,135,245,0.12); color: var(--admin); }
+  .badge.organizer { background: rgba(91,200,245,0.12); color: var(--organizer); }
+  .badge.attendee { background: rgba(245,208,91,0.12); color: var(--attendee); }
+
+  .chevron {
+    color: var(--muted2);
+    font-size: 14px;
+    transition: transform 0.2s;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .endpoint.open .chevron { transform: rotate(180deg); }
+
+  .endpoint-body {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 1.25rem;
+  }
+
+  .endpoint.open .endpoint-body { display: block; }
+
+  /* ---- BODY SECTIONS ---- */
+  .body-section { margin-bottom: 1.25rem; }
+  .body-section:last-child { margin-bottom: 0; }
+
+  .body-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted2);
+    margin-bottom: 0.5rem;
+  }
+
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 12.5px;
+    overflow-x: auto;
+    line-height: 1.65;
+  }
+
+  .key { color: #7dd3fc; }
+  .str { color: #86efac; }
+  .num { color: #fbbf24; }
+  .bool { color: #f472b6; }
+  .comment { color: var(--muted2); font-style: italic; }
+  .optional { color: var(--muted2); }
+
+  .field-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .field-table th {
+    text-align: left;
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+
+  .field-table tr:last-child td { border-bottom: none; }
+
+  .field-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #7dd3fc;
+  }
+
+  .field-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--put);
+  }
+
+  .field-required {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .req { background: rgba(245,101,101,0.12); color: var(--delete); }
+  .opt { background: rgba(122,130,153,0.12); color: var(--muted); }
+
+  .field-desc { color: var(--muted); font-size: 12px; }
+
+  .resp-codes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .resp-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+
+  .code-2xx { background: var(--get-bg); color: var(--get); border: 1px solid var(--get-border); }
+  .code-4xx { background: var(--delete-bg); color: var(--delete); border: 1px solid var(--delete-border); }
+  .code-5xx { background: var(--put-bg); color: var(--put); border: 1px solid var(--put-border); }
+
+  .note {
+    background: rgba(91,138,245,0.08);
+    border: 1px solid rgba(91,138,245,0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 12.5px;
+    color: #93b4f7;
+    line-height: 1.5;
+  }
+
+  .note strong { color: var(--post); }
+
+  /* ---- SEPARATOR ---- */
+  hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  /* ---- SCROLL TO TOP ---- */
+  .scroll-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--muted);
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .scroll-top:hover { color: var(--text); border-color: var(--border2); }
+</style>
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title">Venuva API</div>
+    <div class="logo-subtitle">v0.0.1 · port 8089</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Authentication</div>
+    <a href="#auth" class="nav-link"><span class="nav-method POST">POST</span>/auth/login</a>
+    <a href="#auth" class="nav-link"><span class="nav-method POST">POST</span>/auth/register</a>
+    <a href="#auth" class="nav-link"><span class="nav-method POST">POST</span>/auth/register/organizer</a>
+    <a href="#auth" class="nav-link"><span class="nav-method GET">GET</span>/auth/me</a>
+    <a href="#auth" class="nav-link"><span class="nav-method GET">GET</span>/auth/check-email</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Events</div>
+    <a href="#events" class="nav-link"><span class="nav-method GET">GET</span>/events</a>
+    <a href="#events" class="nav-link"><span class="nav-method GET">GET</span>/events/{id}</a>
+    <a href="#events" class="nav-link"><span class="nav-method POST">POST</span>/events</a>
+    <a href="#events" class="nav-link"><span class="nav-method PUT">PUT</span>/events/{id}</a>
+    <a href="#events" class="nav-link"><span class="nav-method DELETE">DELETE</span>/events/{id}</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Categories</div>
+    <a href="#categories" class="nav-link"><span class="nav-method GET">GET</span>/categories</a>
+    <a href="#categories" class="nav-link"><span class="nav-method GET">GET</span>/categories/{id}</a>
+    <a href="#categories" class="nav-link"><span class="nav-method POST">POST</span>/categories</a>
+    <a href="#categories" class="nav-link"><span class="nav-method PUT">PUT</span>/categories/{id}</a>
+    <a href="#categories" class="nav-link"><span class="nav-method DELETE">DELETE</span>/categories/{id}</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Registrations</div>
+    <a href="#registrations" class="nav-link"><span class="nav-method POST">POST</span>/registrations/register</a>
+    <a href="#registrations" class="nav-link"><span class="nav-method GET">GET</span>/registrations/{userId}</a>
+    <a href="#registrations" class="nav-link"><span class="nav-method DELETE">DELETE</span>/registrations/cancel</a>
+    <a href="#registrations" class="nav-link"><span class="nav-method GET">GET</span>/registrations/count</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Notifications</div>
+    <a href="#notifications" class="nav-link"><span class="nav-method GET">GET</span>/notifications/{userId}</a>
+    <a href="#notifications" class="nav-link"><span class="nav-method PUT">PUT</span>/notifications/mark-read</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Payments</div>
+    <a href="#payments" class="nav-link"><span class="nav-method POST">POST</span>/payments/pay</a>
+    <a href="#payments" class="nav-link"><span class="nav-method POST">POST</span>/payments/callback</a>
+  </div>
+</nav>
+
+<!-- ========== MAIN ========== -->
+<main class="main">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-tag">REST API · JSON · JWT Bearer Auth</div>
+    <h1>Venuva API Docs</h1>
+    <p class="header-desc">Complete reference for all Venuva backend endpoints. Base URL: <code style="font-family:'JetBrains Mono',monospace;color:var(--post);font-size:13px;">http://localhost:8089</code></p>
+    <div class="meta-row">
+      <div class="meta-item">Base: <strong>http://localhost:8089/api</strong></div>
+      <div class="meta-item">Auth: <strong>Bearer &lt;JWT&gt;</strong></div>
+      <div class="meta-item">Content-Type: <strong>application/json</strong></div>
+      <div class="meta-item">Spring Boot: <strong>4.0.5</strong></div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--public-c)"></div><span style="font-size:12px;color:var(--muted)">Public — no token needed</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--auth-c)"></div><span style="font-size:12px;color:var(--muted)">Authenticated — any valid JWT</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div><span style="font-size:12px;color:var(--muted)">Admin only</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--organizer)"></div><span style="font-size:12px;color:var(--muted)">Organizer or Admin</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--attendee)"></div><span style="font-size:12px;color:var(--muted)">Attendee role</span></div>
+  </div>
+
+
+  <!-- ==================== AUTH ==================== -->
+  <div class="section" id="auth">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(91,138,245,0.12);">🔐</div>
+      <div>
+        <div class="section-title">Authentication</div>
+        <div class="section-base">/api/auth</div>
+      </div>
+    </div>
+
+    <!-- POST /auth/login -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/auth/login</div>
+          <div class="endpoint-summary">Authenticate and receive a JWT token</div>
+          <div class="endpoint-badges"><span class="badge public">PUBLIC</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Body</div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">email</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Valid email address of the registered user</td></tr>
+              <tr><td class="field-name">password</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">User's plain-text password (min 6 chars)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre><span class="comment">// POST /api/auth/login</span>
+{
+  <span class="key">"email"</span>: <span class="str">"user@example.com"</span>,
+  <span class="key">"password"</span>: <span class="str">"secret123"</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{
+  <span class="key">"Id"</span>: <span class="num">1</span>,
+  <span class="key">"email"</span>: <span class="str">"user@example.com"</span>,
+  <span class="key">"role"</span>: <span class="str">"ROLE_ATTENDEE"</span>,
+  <span class="key">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiJ9..."</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">400 Wrong credentials</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /auth/register -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/auth/register</div>
+          <div class="endpoint-summary">Register a new attendee account</div>
+          <div class="endpoint-badges"><span class="badge public">PUBLIC</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Body</div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">username</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">2–50 characters, unique display name</td></tr>
+              <tr><td class="field-name">email</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Valid unique email address</td></tr>
+              <tr><td class="field-name">password</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">6–100 characters</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre><span class="comment">// POST /api/auth/register</span>
+{
+  <span class="key">"username"</span>: <span class="str">"john_doe"</span>,
+  <span class="key">"email"</span>: <span class="str">"john@example.com"</span>,
+  <span class="key">"password"</span>: <span class="str">"securePass1"</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">Role is automatically set to <strong>ROLE_ATTENDEE</strong>. The response includes a JWT token — you can use it immediately without a separate login call. Returns <strong>409 Conflict</strong> if the email is already registered.</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">201 Created</span>
+            <span class="resp-code code-4xx">400 Validation error</span>
+            <span class="resp-code code-4xx">409 Email already used</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /auth/register/organizer -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/auth/register/organizer</div>
+          <div class="endpoint-summary">Create a new organizer account (Admin only)</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Headers</div>
+          <pre><span class="key">Authorization</span>: <span class="str">Bearer &lt;ADMIN_JWT&gt;</span></pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Request Body</div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">username</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">2–50 characters</td></tr>
+              <tr><td class="field-name">email</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Valid unique email</td></tr>
+              <tr><td class="field-name">password</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">6–100 characters</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">201 Created</span>
+            <span class="resp-code code-4xx">403 Not admin</span>
+            <span class="resp-code code-4xx">409 Email in use</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /auth/me -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/auth/me</div>
+          <div class="endpoint-summary">Get current authenticated user's profile</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Headers</div>
+          <pre><span class="key">Authorization</span>: <span class="str">Bearer &lt;JWT&gt;</span></pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{
+  <span class="key">"Id"</span>: <span class="num">3</span>,
+  <span class="key">"email"</span>: <span class="str">"user@example.com"</span>,
+  <span class="key">"role"</span>: <span class="str">"ROLE_ATTENDEE"</span>,
+  <span class="key">"token"</span>: <span class="str">"eyJhbGci..."</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">401 Missing/invalid token</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /auth/check-email -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/auth/check-email<span class="query">?email={email}</span></div>
+          <div class="endpoint-summary">Check if an email address is already registered</div>
+          <div class="endpoint-badges"><span class="badge public">PUBLIC</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Query Parameters</div>
+          <table class="field-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">email</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Email to check, e.g. <code style="font-size:11px;color:var(--str)">?email=user@example.com</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre><span class="bool">true</span>   <span class="comment">// email already exists</span>
+<span class="bool">false</span>  <span class="comment">// email is available</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== EVENTS ==================== -->
+  <div class="section" id="events">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(62,207,142,0.12);">📅</div>
+      <div>
+        <div class="section-title">Events</div>
+        <div class="section-base">/api/events</div>
+      </div>
+    </div>
+
+    <!-- GET /events -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/events</div>
+          <div class="endpoint-summary">List all events with organizer and category info</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>[
+  {
+    <span class="key">"id"</span>: <span class="num">1</span>,
+    <span class="key">"title"</span>: <span class="str">"Tech Summit 2025"</span>,
+    <span class="key">"date"</span>: <span class="str">"2025-09-15T10:00:00"</span>,
+    <span class="key">"location"</span>: <span class="str">"Cairo Hub"</span>,
+    <span class="key">"maxAttendance"</span>: <span class="num">200</span>,
+    <span class="key">"eventStatus"</span>: <span class="str">"SCHEDULED"</span>,
+    <span class="key">"paymentRequired"</span>: <span class="bool">true</span>,
+    <span class="key">"price"</span>: <span class="num">150.00</span>,
+    <span class="key">"organizerId"</span>: <span class="num">2</span>,
+    <span class="key">"organizerName"</span>: <span class="str">"Ahmed Ali"</span>,
+    <span class="key">"categoryId"</span>: <span class="num">3</span>,
+    <span class="key">"categoryName"</span>: <span class="str">"Technology"</span>
+  }
+]</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">400 No events found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /events/{id} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/events/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Get a single event's full details</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Path Parameters</div>
+          <table class="field-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">id</td><td class="field-type">int</td><td class="field-desc">The numeric event ID</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{
+  <span class="key">"id"</span>: <span class="num">1</span>,
+  <span class="key">"title"</span>: <span class="str">"Tech Summit 2025"</span>,
+  <span class="key">"description"</span>: <span class="str">"Annual technology summit..."</span>,
+  <span class="key">"date"</span>: <span class="str">"2025-09-15T10:00:00"</span>,
+  <span class="key">"location"</span>: <span class="str">"Cairo Hub"</span>,
+  <span class="key">"maxAttendance"</span>: <span class="num">200</span>,
+  <span class="key">"eventStatus"</span>: <span class="str">"SCHEDULED"</span>,
+  <span class="key">"paymentRequired"</span>: <span class="bool">true</span>,
+  <span class="key">"price"</span>: <span class="num">150.00</span>,
+  <span class="key">"organizerId"</span>: <span class="num">2</span>,
+  <span class="key">"organizerName"</span>: <span class="str">"Ahmed Ali"</span>,
+  <span class="key">"categoryId"</span>: <span class="num">3</span>,
+  <span class="key">"categoryName"</span>: <span class="str">"Technology"</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">404 Event not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /events -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/events</div>
+          <div class="endpoint-summary">Create a new event</div>
+          <div class="endpoint-badges"><span class="badge organizer">ORGANIZER</span><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Body Fields</div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">title</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Non-blank title of the event</td></tr>
+              <tr><td class="field-name">description</td><td class="field-type">string</td><td><span class="field-required opt">Optional</span></td><td class="field-desc">Long-form description (stored as TEXT)</td></tr>
+              <tr><td class="field-name">date</td><td class="field-type">LocalDateTime</td><td><span class="field-required req">Required</span></td><td class="field-desc">ISO 8601 datetime — must be in the future, e.g. <code style="font-size:11px;color:var(--str)">"2025-10-01T09:00:00"</code></td></tr>
+              <tr><td class="field-name">location</td><td class="field-type">string</td><td><span class="field-required req">Required</span></td><td class="field-desc">Non-blank venue/address string</td></tr>
+              <tr><td class="field-name">maxAttendance</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">Minimum value: 1</td></tr>
+              <tr><td class="field-name">eventStatus</td><td class="field-type">enum</td><td><span class="field-required req">Required</span></td><td class="field-desc">One of: <code style="font-size:11px;color:var(--str)">SCHEDULED</code>, <code style="font-size:11px;color:var(--str)">COMPLETED</code>, <code style="font-size:11px;color:var(--str)">CANCELED</code></td></tr>
+              <tr><td class="field-name">paymentRequired</td><td class="field-type">boolean</td><td><span class="field-required req">Required</span></td><td class="field-desc">Whether attendees must pay to register</td></tr>
+              <tr><td class="field-name">price</td><td class="field-type">BigDecimal</td><td><span class="field-required opt">Conditional</span></td><td class="field-desc">Must be provided and ≥ 0 if <code style="font-size:11px">paymentRequired</code> is true</td></tr>
+              <tr><td class="field-name">organizerId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of the user with ORGANIZER role</td></tr>
+              <tr><td class="field-name">categoryId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of an existing category</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre><span class="comment">// POST /api/events</span>
+{
+  <span class="key">"title"</span>: <span class="str">"Tech Summit 2025"</span>,
+  <span class="key">"description"</span>: <span class="str">"Annual technology summit for developers"</span>,
+  <span class="key">"date"</span>: <span class="str">"2025-09-15T10:00:00"</span>,
+  <span class="key">"location"</span>: <span class="str">"Cairo Hub, Maadi"</span>,
+  <span class="key">"maxAttendance"</span>: <span class="num">200</span>,
+  <span class="key">"eventStatus"</span>: <span class="str">"SCHEDULED"</span>,
+  <span class="key">"paymentRequired"</span>: <span class="bool">true</span>,
+  <span class="key">"price"</span>: <span class="num">150.00</span>,
+  <span class="key">"organizerId"</span>: <span class="num">2</span>,
+  <span class="key">"categoryId"</span>: <span class="num">3</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Side Effects</div>
+          <div class="note">On success, a notification is automatically broadcast to <strong>all users with ROLE_ATTENDEE</strong>, and an email is sent to each of them with the event details.</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">201 Created (returns event ID)</span>
+            <span class="resp-code code-4xx">400 Validation error</span>
+            <span class="resp-code code-4xx">403 Insufficient role</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUT /events/{id} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge PUT">PUT</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/events/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Partially update an event (all fields optional)</div>
+          <div class="endpoint-badges"><span class="badge organizer">ORGANIZER</span><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">Only send the fields you wish to update — all fields in <strong>DetailedEventDto</strong> default to null and are only applied when present. The date must still be in the future if provided.</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre><span class="comment">// PUT /api/events/1 — update location and date only</span>
+{
+  <span class="key">"location"</span>: <span class="str">"New Venue, Zamalek"</span>,
+  <span class="key">"date"</span>: <span class="str">"2025-10-01T14:00:00"</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Side Effects</div>
+          <div class="note">All users <strong>registered for this event</strong> receive an in-app notification and email about the update.</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (true)</span>
+            <span class="resp-code code-4xx">400 Invalid data / past date</span>
+            <span class="resp-code code-4xx">404 Event not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE /events/{id} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge DELETE">DELETE</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/events/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Permanently delete an event</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Side Effects</div>
+          <div class="note">On deletion a notification is sent to <strong>all attendees</strong>. All associated registrations and payments are cascade-deleted by the database.</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (true)</span>
+            <span class="resp-code code-4xx">404 Event not found</span>
+            <span class="resp-code code-4xx">403 Not admin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== CATEGORIES ==================== -->
+  <div class="section" id="categories">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(240,160,80,0.12);">🏷️</div>
+      <div>
+        <div class="section-title">Categories</div>
+        <div class="section-base">/api/categories</div>
+      </div>
+    </div>
+
+    <!-- GET all -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/categories</div>
+          <div class="endpoint-summary">List all event categories</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>[
+  { <span class="key">"id"</span>: <span class="num">1</span>, <span class="key">"name"</span>: <span class="str">"Technology"</span> },
+  { <span class="key">"id"</span>: <span class="num">2</span>, <span class="key">"name"</span>: <span class="str">"Music"</span> }
+]</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET by ID -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/categories/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Get a single category by ID</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{ <span class="key">"id"</span>: <span class="num">1</span>, <span class="key">"name"</span>: <span class="str">"Technology"</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">404 Not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /categories -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/categories</div>
+          <div class="endpoint-summary">Create a new category</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre>{ <span class="key">"name"</span>: <span class="str">"Technology"</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">403 Not admin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUT /categories/{id} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge PUT">PUT</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/categories/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Update category name</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre>{ <span class="key">"name"</span>: <span class="str">"Science & Tech"</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (true)</span>
+            <span class="resp-code code-4xx">404 Not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE /categories/{id} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge DELETE">DELETE</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/categories/<span class="param">{id}</span></div>
+          <div class="endpoint-summary">Delete a category (cascades to events)</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (true)</span>
+            <span class="resp-code code-4xx">404 Not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== REGISTRATIONS ==================== -->
+  <div class="section" id="registrations">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(245,208,91,0.12);">🎟️</div>
+      <div>
+        <div class="section-title">Registrations</div>
+        <div class="section-base">/api/registrations</div>
+      </div>
+    </div>
+
+    <!-- POST /register -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/register</div>
+          <div class="endpoint-summary">Register a user to an event</div>
+          <div class="endpoint-badges"><span class="badge public">PUBLIC</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Body</div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">userId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of the user being registered</td></tr>
+              <tr><td class="field-name">eventId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of the target event</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre>{ <span class="key">"userId"</span>: <span class="num">5</span>, <span class="key">"eventId"</span>: <span class="num">1</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">
+            If the event has <strong>paymentRequired: false</strong>, registration status is set to <strong>PAID</strong> immediately.<br><br>
+            If <strong>paymentRequired: true</strong>, status is set to <strong>PENDING</strong> — the user must complete payment through <code style="font-size:11px;color:var(--post)">/api/payments/pay</code> to be confirmed.
+          </div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">201 Created</span>
+            <span class="resp-code code-4xx">409 Already registered</span>
+            <span class="resp-code code-4xx">404 User or event not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /registrations/{userId} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/<span class="param">{userId}</span></div>
+          <div class="endpoint-summary">Get all event registrations for a user</div>
+          <div class="endpoint-badges"><span class="badge attendee">ATTENDEE</span><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>[
+  {
+    <span class="key">"registrationId"</span>: <span class="num">10</span>,
+    <span class="key">"userId"</span>: <span class="num">5</span>,
+    <span class="key">"eventId"</span>: <span class="num">1</span>,
+    <span class="key">"eventTitle"</span>: <span class="str">"Tech Summit 2025"</span>,
+    <span class="key">"eventDate"</span>: <span class="str">"2025-09-15T10:00:00"</span>,
+    <span class="key">"eventLocation"</span>: <span class="str">"Cairo Hub"</span>,
+    <span class="key">"paymentRequired"</span>: <span class="bool">true</span>,
+    <span class="key">"status"</span>: <span class="str">"PENDING"</span>
+  }
+]</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Status Values</div>
+          <div class="note">
+            Registration statuses: <strong>PENDING</strong> (awaiting payment), <strong>PAID</strong>, <strong>CONFIRMED</strong>, <strong>CANCELED</strong>, <strong>FINISHED</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE /registrations/cancel -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge DELETE">DELETE</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/cancel</div>
+          <div class="endpoint-summary">Cancel a user's registration for an event</div>
+          <div class="endpoint-badges"><span class="badge attendee">ATTENDEE</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Request Body</div>
+          <pre>{ <span class="key">"userId"</span>: <span class="num">5</span>, <span class="key">"eventId"</span>: <span class="num">1</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{ <span class="key">"message"</span>: <span class="str">"You are cancelled successfully"</span> }</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">400 Not registered</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /getNumberOfRegesters -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/getNumberOfRegesters</div>
+          <div class="endpoint-summary">Total registration count across all events</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre><span class="num">1024</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /getNumberOfRegestersForEvent/{eventId} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/getNumberOfRegestersForEvent/<span class="param">{eventId}</span></div>
+          <div class="endpoint-summary">Registration count for a specific event</div>
+          <div class="endpoint-badges"><span class="badge admin">ADMIN</span><span class="badge organizer">ORGANIZER</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre><span class="num">87</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /getTotalSpents/{userId} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/registrations/getTotalSpents/<span class="param">{userId}</span></div>
+          <div class="endpoint-summary">Total amount paid by a user across all PAID registrations</div>
+          <div class="endpoint-badges"><span class="badge attendee">ATTENDEE</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre><span class="num">450.00</span>  <span class="comment">// BigDecimal sum in EGP</span></pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">Only counts registrations with status <strong>PAID</strong>. Sums the event <code style="font-size:11px">price</code> fields — not actual PayMob transaction amounts.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== NOTIFICATIONS ==================== -->
+  <div class="section" id="notifications">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(185,135,245,0.12);">🔔</div>
+      <div>
+        <div class="section-title">Notifications</div>
+        <div class="section-base">/api/notifications</div>
+      </div>
+    </div>
+
+    <!-- GET /notifications/{userId} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge GET">GET</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/notifications/<span class="param">{userId}</span></div>
+          <div class="endpoint-summary">Get all notifications for a user</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>[
+  {
+    <span class="key">"notifId"</span>: <span class="num">7</span>,
+    <span class="key">"message"</span>: <span class="str">"New event created: Tech Summit 2025..."</span>,
+    <span class="key">"date"</span>: <span class="str">"2025-08-01T12:00:00"</span>,
+    <span class="key">"userId"</span>: <span class="num">5</span>,
+    <span class="key">"userName"</span>: <span class="str">"john_doe"</span>,
+    <span class="key">"read"</span>: <span class="bool">false</span>
+  }
+]</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">Notifications are generated automatically when events are created, updated, or deleted. Each notification has a per-user read state tracked in the <strong>user_notifications</strong> join table.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUT /notifications/mark-read/{notifId} -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge PUT">PUT</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/notifications/mark-read/<span class="param">{notifId}</span></div>
+          <div class="endpoint-summary">Mark a notification as read</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Path Parameters</div>
+          <table class="field-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">notifId</td><td class="field-type">int</td><td class="field-desc">The ID from the <code style="font-size:11px">user_notifications</code> table (not the notification itself)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre>{
+  <span class="key">"notifId"</span>: <span class="num">7</span>,
+  <span class="key">"message"</span>: <span class="str">"New event created..."</span>,
+  <span class="key">"date"</span>: <span class="str">"2025-08-01T12:00:00"</span>,
+  <span class="key">"userId"</span>: <span class="num">5</span>,
+  <span class="key">"userName"</span>: <span class="str">"john_doe"</span>,
+  <span class="key">"read"</span>: <span class="bool">true</span>
+}</pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK</span>
+            <span class="resp-code code-4xx">404 Notification not found</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== PAYMENTS ==================== -->
+  <div class="section" id="payments">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(62,207,142,0.12);">💳</div>
+      <div>
+        <div class="section-title">Payments (PayMob)</div>
+        <div class="section-base">/api/payments</div>
+      </div>
+    </div>
+
+    <!-- POST /payments/pay -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/payments/pay<span class="query">?amountCents={n}&userId={n}&eventId={n}</span></div>
+          <div class="endpoint-summary">Initiate a PayMob card payment — returns iFrame URL</div>
+          <div class="endpoint-badges"><span class="badge auth">AUTHENTICATED</span><span class="badge attendee">ATTENDEE</span><span class="badge organizer">ORGANIZER</span><span class="badge admin">ADMIN</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Query Parameters</div>
+          <table class="field-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="field-name">amountCents</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">Payment amount in EGP cents (e.g. 15000 = 150 EGP). Note: the service multiplies this by 100 internally — pass the base price in EGP × 100.</td></tr>
+              <tr><td class="field-name">userId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of the paying user</td></tr>
+              <tr><td class="field-name">eventId</td><td class="field-type">int</td><td><span class="field-required req">Required</span></td><td class="field-desc">ID of the event being paid for</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Example Request</div>
+          <pre><span class="comment">// POST /api/payments/pay?amountCents=150&userId=5&eventId=1</span>
+<span class="comment">// No body needed — all params are query strings</span></pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Success Response (200)</div>
+          <pre><span class="str">"https://accept.paymob.com/api/acceptance/iframes/897502?payment_token=..."</span></pre>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Payment Flow</div>
+          <div class="note">
+            This endpoint executes a 3-step PayMob flow: <strong>1.</strong> Authenticate → get token &nbsp;<strong>2.</strong> Create order &nbsp;<strong>3.</strong> Generate payment key → build iFrame URL.<br><br>
+            Redirect the user to the returned URL. PayMob will call back your <code style="font-size:11px;color:var(--post)">/api/payments/callback</code> with the result.
+          </div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (iFrame URL string)</span>
+            <span class="resp-code code-5xx">500 PayMob integration error</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /payments/callback -->
+    <div class="endpoint" onclick="toggle(this)">
+      <div class="endpoint-header">
+        <span class="method-badge POST">POST</span>
+        <div class="endpoint-meta">
+          <div class="endpoint-path">/api/payments/callback<span class="query">?hmac={signature}</span></div>
+          <div class="endpoint-summary">PayMob webhook — do not call this manually</div>
+          <div class="endpoint-badges"><span class="badge public">PUBLIC</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="body-section">
+          <div class="body-label">Notes</div>
+          <div class="note">
+            This endpoint is called <strong>by PayMob's servers</strong>, not by your frontend. It must remain public (no JWT required).<br><br>
+            On a successful HMAC-verified payment, two things happen automatically: <strong>1)</strong> A payment record is saved to the database. <strong>2)</strong> The user is registered to the event via <code style="font-size:11px">RegistrationService.registerUserToEvent()</code>.<br><br>
+            The endpoint always returns <strong>200 OK</strong> regardless of HMAC result to prevent PayMob retry loops.
+          </div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Response Codes</div>
+          <div class="resp-codes">
+            <span class="resp-code code-2xx">200 OK (always)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<a href="#" class="scroll-top" title="Back to top">↑</a>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('open');
+}
+
+const links = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('.section');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { threshold: 0.2 });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

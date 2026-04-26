@@ -1,185 +1,243 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { eventsData } from "../utils/eventsData";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Calendar, Ticket } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Ticket, User, Tag, Info, CheckCircle2 } from "lucide-react";
+import { useEventContext } from "../context/EventContext";
+import { useAuth } from "@/hooks/useAuth";
+import { eventsApi } from "@/utils/api/eventsApi";
+import { registrationApi } from "@/utils/api/registrationApi";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 function EventDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { setSelectedEvent } = useEventContext();
+  const { user } = useAuth();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const event = eventsData.find((e) => e.id === Number(id));
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const data = await eventsApi.getEventById(id);
+        setEvent(data);
+      } catch (error) {
+        toast.error("Failed to load event details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [id]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="mt-4 text-slate-500">Loading event details...</p>
+    </div>
+  );
 
   if (!event) {
     return (
-      <div className="p-10 text-center text-slate-500">
-        Event not found
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center space-y-4">
+        <div className="bg-slate-50 inline-flex p-4 rounded-full text-slate-400">
+           <Info className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold">Event not found</h2>
+        <p className="text-slate-500">The event you are looking for may have been removed or is unavailable.</p>
+        <Button onClick={() => navigate("/events")}>Back to Events</Button>
       </div>
     );
   }
 
-  const isFull = event.registered >= event.capacity;
+  const handleRegister = async () => {
+    if (!user) {
+      toast.info("Please sign in to register");
+      navigate("/auth", { state: { from: { pathname: `/events/${id}` } } });
+      return;
+    }
 
-  const capacityPercent = Math.round(
-    (event.registered / event.capacity) * 100
-  );
+    if (!event.paymentRequired) {
+      setShowConfirmDialog(true);
+      return;
+    } else {
+      setSelectedEvent(event);
+      navigate("/register");
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10 animate-fade-in-up">
-
-      {/* Back Button */}
+    <div className="max-w-6xl mx-auto px-4 py-10 animate-fade-in">
       <button
         onClick={() => navigate("/events")}
-        className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6 cursor-pointer"
+        className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary mb-8 transition-colors group cursor-pointer"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Events
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                <Tag className="w-3 h-3 mr-1" />
+                {event.categoryName || "Event"}
+              </Badge>
+              <Badge variant="outline">
+                {event.eventStatus}
+              </Badge>
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              {event.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-6 text-slate-600">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-slate-400" />
+                <span>By <span className="font-semibold text-slate-900">{event.organizerName || "Organizer"}</span></span>
+              </div>
+            </div>
+          </div>
 
-        {/* LEFT SIDE */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-slate-50/50 border-none shadow-none">
+              <CardContent className="p-5 flex flex-col gap-2">
+                <div className="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</p>
+                  <p className="font-bold text-slate-900">{event.location}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-50/50 border-none shadow-none">
+              <CardContent className="p-5 flex flex-col gap-2">
+                <div className="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date & Time</p>
+                  <p className="font-bold text-slate-900">{new Date(event.date).toLocaleString()}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-50/50 border-none shadow-none">
+              <CardContent className="p-5 flex flex-col gap-2">
+                <div className="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm">
+                  <Ticket className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Attendance</p>
+                  <p className="font-bold text-slate-900">Up to {event.maxAttendance} guests</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-slate-900">Description</h2>
+            <div className="prose prose-slate max-w-none">
+              <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                {event.description || "No description provided for this event."}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-6">
-
-          {/* HERO */}
-          <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 text-white p-8 shadow-sm">
-            <h1 className="text-3xl font-bold">{event.title}</h1>
-            <p className="text-slate-200 mt-2">
-              Join this event and level up your skills
-            </p>
-          </div>
-
-          {/* METADATA */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-slate-500">Venue</p>
-                  <p className="font-medium">{event.venue}</p>
+          <Card className="sticky top-24 border-2">
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Registration Price</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-slate-900">
+                    {event.paymentRequired ? `$${event.price}` : "Free"}
+                  </span>
+                  {event.paymentRequired && <span className="text-slate-500 font-medium">USD</span>}
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-slate-500">Date</p>
-                  <p className="font-medium">{event.date}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <Ticket className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-slate-500">Price</p>
-                  <p className="font-medium">
-                    {event.price === 0 ? "Free" : `$${event.price}`}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-          </div>
-
-          {/* DESCRIPTION */}
-          <Card>
-            <CardContent className="p-6 space-y-2">
-              <h2 className="font-semibold text-lg">About this event</h2>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                This event is designed to help developers improve practical skills,
-                connect with other engineers, and gain real-world experience through
-                workshops, talks, and networking sessions.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* CAPACITY BAR */}
-          <Card>
-            <CardContent className="p-6 space-y-3">
-
-              <div className="flex justify-between text-sm text-slate-600">
-                <span>
-                  Registered {event.registered} / {event.capacity}
-                </span>
-
-                <span className="font-medium text-slate-800">
-                  {capacityPercent}% filled
-                </span>
               </div>
 
-              <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${capacityPercent}%` }}
-                />
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <Button
+                  size="lg"
+                  className="w-full text-base font-bold h-12 shadow-md shadow-primary/20"
+                  disabled={isRegistering || event.eventStatus !== 'SCHEDULED'}
+                  onClick={handleRegister}
+                >
+                  {isRegistering ? "Processing..." : 
+                   event.eventStatus !== 'SCHEDULED' ? "Not Available" :
+                   "Register Now"}
+                </Button>
+                
+                <p className="text-center text-xs text-slate-500">
+                  Secure checkout and instant confirmation.
+                </p>
               </div>
 
-              <p className="text-xs text-slate-500">
-                {event.capacity - event.registered} seats remaining
-              </p>
-
+              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                 <div className="bg-white p-2 rounded-lg text-primary shadow-sm">
+                    <Info className="w-4 h-4" />
+                 </div>
+                 <p className="text-[11px] text-slate-500 leading-tight">
+                    You can cancel your registration at any time from your dashboard.
+                 </p>
+              </div>
             </CardContent>
           </Card>
-
         </div>
-
-        {/* RIGHT SIDE */}
-        <div className="space-y-4 lg:sticky lg:top-10 h-fit">
-
-          <Card>
-            <CardContent className="p-5 space-y-4">
-
-              <div>
-                <p className="text-sm text-slate-500">Price</p>
-                <p className="text-2xl font-bold">
-                  {event.price === 0 ? "Free" : `$${event.price}`}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Availability</p>
-                <p className="font-medium">
-                  {event.capacity - event.registered} seats left
-                </p>
-              </div>
-
-              {/* 🔴 FIXED BUTTON */}
-              <Button
-                className="w-full"
-                disabled={isFull}
-                onClick={() => {
-                  if (isFull) return;
-                  navigate("/register");
-                }}
-              >
-                {isFull ? "Registration Closed" : "Register Now"}
-              </Button>
-
-              {isFull && (
-                <p className="text-xs text-red-500 text-center">
-                  This event is fully booked
-                </p>
-              )}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/events")}
-              >
-                Back to Events
-              </Button>
-
-            </CardContent>
-          </Card>
-
-        </div>
-
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" /> Confirm Registration
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-medium text-slate-600 pt-2">
+              You are about to register for <strong>"{event.title}"</strong>. 
+              Your registration will be officially recorded under <strong>{user?.username || user?.email}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-6">
+            <AlertDialogCancel className="font-bold border-2 rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                setIsRegistering(true);
+                const toastId = toast.loading("Processing registration...");
+                try {
+                  await registrationApi.registerForEvent(user.id, event.id);
+                  toast.success("Successfully registered!", { id: toastId });
+                  navigate("/dashboard");
+                } catch (error) {
+                  toast.error(error.response?.data?.message || "Registration failed", { id: toastId });
+                } finally {
+                  setIsRegistering(false);
+                }
+              }} 
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl px-8 h-11"
+            >
+              Confirm & Register
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

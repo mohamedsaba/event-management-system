@@ -1,53 +1,115 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEventContext } from "../context/EventContext";
+import { useAuth } from "@/hooks/useAuth";
+import { registrationApi } from "@/utils/api/registrationApi";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 
 function RegisterButton({ event }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { setSelectedEvent } = useEventContext();
-  const [error, setError] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const isFull = event.registered >= event.capacity;
+  const isFree = !event.paymentRequired;
+  const isDisabled = isRegistering || event.eventStatus !== 'SCHEDULED';
 
-  const handleClick = () => {
-    if (isFull) {
-      setError("Registration closed for this event");
+  const handleRegisterFree = async () => {
+    setIsRegistering(true);
+    const toastId = toast.loading("Processing your registration...");
+    
+    try {
+      await registrationApi.registerForEvent(user.id, event.id);
+      toast.success("Successfully registered!", { id: toastId });
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Registration failed", { id: toastId });
+      setIsRegistering(false);
+    }
+  };
+
+  const handleClick = (e) => {
+    if (isDisabled) return;
+    
+    if (!user) {
+      toast.info("Please sign in to register for events");
+      navigate("/auth", { state: { from: { pathname: "/events" } } });
       return;
     }
 
-    setError("");
-
-    setSelectedEvent({
-      ...event,
-      tickets: 1,
-    });
-
-    navigate("/register");
+    if (!isFree) {
+      setSelectedEvent(event);
+      navigate("/register");
+    }
   };
 
   return (
     <div className="flex flex-col items-start gap-1">
-      {error && (
-        <p className="text-xs text-red-500 font-medium">
-          {error}
-        </p>
+      {isFree ? (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              onClick={handleClick}
+              disabled={isDisabled}
+              className={`
+                text-sm font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer
+                transition-all duration-200
+                ${isDisabled
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95"
+                }
+              `}
+            >
+              {isRegistering ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+               event.eventStatus !== 'SCHEDULED' ? "Unavailable" : "Register"}
+            </button>
+          </AlertDialogTrigger>
+          {user && !isDisabled && (
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Registration</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You are about to register for <strong>"{event.title}"</strong>. 
+                  Your registration will be under <strong>{user.username || user.email}</strong>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRegisterFree} className="bg-primary">
+                  Confirm Registration
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          )}
+        </AlertDialog>
+      ) : (
+        <button
+          onClick={handleClick}
+          disabled={isDisabled}
+          className={`
+            text-sm font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer
+            transition-all duration-200
+            ${isDisabled
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+              : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95"
+            }
+          `}
+        >
+          {event.eventStatus !== 'SCHEDULED' ? "Unavailable" : "Register"}
+        </button>
       )}
-
-      <button
-        onClick={handleClick}
-        disabled={isFull}
-        className={`
-          text-sm font-medium px-4 py-2 rounded-lg shadow-sm cursor-pointer
-          transition-all duration-300 ease-in-out
-          hover:scale-105 hover:-translate-y-0.5 hover:shadow-lg
-          ${isFull
-            ? "bg-slate-400 cursor-not-allowed opacity-70"
-            : "bg-primary text-white hover:brightness-75"
-          }
-        `}
-      >
-        Register
-      </button>
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { bookingApi } from '@/utils/api/bookingApi';
+import { registrationApi } from '@/utils/api/registrationApi';
+import { useAuth } from './useAuth';
 
 export const useRegistrations = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['registrations'],
-    queryFn: bookingApi.getRegistrations,
-    // Provide fallback mock data until Dev A finishes the backend
-    initialData: [
-      { id: 1, ref: "REF-847291", title: "Tech Summit 2025", date: "Oct 24, 2025", tickets: 2, amount: 525, status: "Confirmed" }
-    ]
+    queryKey: ['registrations', user?.id],
+    queryFn: () => registrationApi.getUserRegistrations(user?.id),
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

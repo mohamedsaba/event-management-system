@@ -3,11 +3,10 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
 
-const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useContext(AuthContext);
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { user, token, loading } = useContext(AuthContext);
   const location = useLocation();
 
-  // 1. If we are still checking if the user is logged in, show a spinner
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
@@ -16,10 +15,20 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // 2. If no user, redirect to auth but save the location they were trying to visit
-  // This allows us to send them back to /payment after they log in!
-  if (!user) {
+  if (!user || !token) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(user.role)) {
+      const fallbackMap = {
+        'admin': '/admin/dashboard',
+        'organizer': '/organizer/dashboard',
+        'attendee': '/dashboard'
+      };
+      return <Navigate to={fallbackMap[user.role] || '/dashboard'} replace />;
+    }
   }
 
   return children;

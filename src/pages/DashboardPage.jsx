@@ -1,4 +1,4 @@
-import { useState, useContext } from "react"
+import { useState, useContext, useEffect } from "react"
 import { AuthContext } from "@/context/AuthContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { LogOut, Calendar, CreditCard, User, Download, Printer } from "lucide-react"
+import { LogOut, Calendar, CreditCard, User, Download, Printer, Ticket, Trash2, Settings, History, ShieldCheck } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,250 +16,231 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useRegistrations } from "@/hooks/useRegistrations"
+import { registrationApi } from "@/utils/api/registrationApi"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function DashboardPage() {
-  const { user, logout, updateUser } = useContext(AuthContext)
+  const { user, logout } = useContext(AuthContext)
+  const { data: myRegistrations, isLoading: registrationsLoading, refetch } = useRegistrations();
+  const queryClient = useQueryClient();
   
-  const userName = user?.name || "User"
-  const email = user?.email || ""
-
-  const { data: myRegistrations, isLoading } = useRegistrations();
-
-  const myPayments = [
-    { 
-      id: 1, 
-      ref: "REF-928371", 
-      title: "Tech Summit 2025", 
-      date: "Oct 20, 2025", 
-      amount: 525, 
-      method: "Visa ****4242", 
-      status: "Successful" 
-    }
-  ];
-
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [spendingLoading, setSpendingLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null)
+  const [isCancelling, setIsCancelling] = useState(null);
 
-  const handleSaveProfile = (e) => {
-    e.preventDefault()
-    const newName = e.target.name.value;
-    updateUser({ name: newName });
-    toast.success("Profile updated successfully")
-  }
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.id) return;
+      try {
+        const spent = await registrationApi.getUserTotalSpending(user.id);
+        setTotalSpent(spent);
+      } catch (error) {
+        console.error("Failed to fetch spending stats");
+      } finally {
+        setSpendingLoading(false);
+      }
+    };
+    fetchStats();
+  }, [user?.id]);
 
-  const handlePrint = () => {
-    window.print()
-  }
+  const handleCancelRegistration = async (eventId) => {
+    if (!window.confirm("Are you sure you want to cancel this registration?")) return;
+    
+    setIsCancelling(eventId);
+    const toastId = toast.loading("Cancelling registration...");
+    try {
+      await registrationApi.cancelRegistration(user.id, eventId);
+      toast.success("Registration cancelled successfully", { id: toastId });
+      queryClient.invalidateQueries(['registrations']);
+      refetch();
+    } catch (error) {
+      toast.error("Failed to cancel registration", { id: toastId });
+    } finally {
+      setIsCancelling(null);
+    }
+  };
 
-  if (isLoading) {
-    return <div className="p-10 text-center text-muted-foreground">Loading your dashboard...</div>
+  const handleDownloadTicket = (regId) => {
+    toast.success("Ticket download started...");
+  };
+
+  if (registrationsLoading || spendingLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500">Loading your personal dashboard...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:py-10 px-4 sm:px-6 lg:px-8 animate-fade-in-up">
-      {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Welcome back, {userName}. Manage your events and payments.</p>
+    <div className="max-w-7xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Attendee Dashboard</h1>
+          <p className="text-slate-500 font-medium">Welcome back, <span className="text-primary font-bold">{user?.username || user?.email}</span></p>
         </div>
-        <Button variant="destructive" onClick={logout} className="gap-2 w-full md:w-auto">
-          <LogOut className="w-4 h-4" /> Log Out
-        </Button>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Button variant="outline" size="lg" className="gap-2 flex-1 md:flex-none font-bold" onClick={() => toast.info("Profile settings coming soon")}>
+             <Settings className="w-4 h-4" /> Profile
+          </Button>
+          <Button variant="destructive" size="lg" onClick={logout} className="gap-2 flex-1 md:flex-none font-bold shadow-lg shadow-destructive/20">
+            <LogOut className="w-4 h-4" /> Log Out
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
-            <Calendar className="w-4 h-4 text-muted-foreground" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+        <Card className="border-none bg-primary/5 shadow-none rounded-2xl overflow-hidden relative">
+          <div className="absolute -right-4 -bottom-4 opacity-10">
+             <Ticket className="w-24 h-24 rotate-12" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest">Active Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{myRegistrations?.length || 0}</div>
+            <div className="text-4xl font-black text-slate-900">{myRegistrations?.length || 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
+
+        <Card className="border-none bg-emerald-50 shadow-none rounded-2xl overflow-hidden relative">
+          <div className="absolute -right-4 -bottom-4 opacity-10">
+             <CreditCard className="w-24 h-24 rotate-12" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Total Investment</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,240.00</div>
+            <div className="text-4xl font-black text-slate-900">${totalSpent.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card className="sm:col-span-2 md:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Profile Status</CardTitle>
-            <User className="w-4 h-4 text-muted-foreground" />
+
+        <Card className="border-none bg-slate-900 shadow-none rounded-2xl overflow-hidden relative">
+           <div className="absolute -right-4 -bottom-4 opacity-10">
+             <User className="w-24 h-24 rotate-12 text-white" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest">Account Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge className="bg-emerald-500">Verified</Badge>
+            <div className="text-2xl font-black text-white capitalize">{user?.role}</div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="registrations" className="space-y-4">
-        <TabsList className="w-full sm:w-auto flex-wrap h-auto justify-start gap-1">
-          <TabsTrigger value="registrations" className="flex-1 sm:flex-none">Registrations</TabsTrigger>
-          <TabsTrigger value="payments" className="flex-1 sm:flex-none">Payment History</TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 sm:flex-none">Settings</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="registrations" className="space-y-8">
+        <div className="flex justify-between items-center border-b pb-2">
+          <TabsList className="bg-transparent h-auto p-0 gap-8">
+            <TabsTrigger value="registrations" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-10 px-0 font-bold text-sm">
+              <Ticket className="w-4 h-4 mr-2" /> My Tickets
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-10 px-0 font-bold text-sm">
+              <User className="w-4 h-4 mr-2" /> Profile Info
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="registrations">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Registrations</CardTitle>
-              <CardDescription>Upcoming events you are attending.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Event</TableHead>
-                      <TableHead className="hidden md:table-cell">Date</TableHead>
-                      <TableHead className="hidden sm:table-cell">Tickets</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {myRegistrations?.map((reg) => (
-                      <TableRow key={reg.id}>
-                        <TableCell className="font-medium whitespace-nowrap">{reg.title}</TableCell>
-                        <TableCell className="hidden md:table-cell">{reg.date}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{reg.tickets}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 whitespace-nowrap">
-                            {reg.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedReceipt(reg)}>View</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payments">
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
-              <CardDescription>Records of all your previous event purchases.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead className="hidden sm:table-cell">Method</TableHead>
-                      <TableHead className="hidden md:table-cell">Status</TableHead>
-                      <TableHead className="text-right">Receipt</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {myPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-mono text-xs whitespace-nowrap">{payment.ref}</TableCell>
-                        <TableCell className="font-semibold">${payment.amount.toFixed(2)}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground">{payment.method}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge variant="secondary" className="whitespace-nowrap">{payment.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="icon" onClick={() => setSelectedReceipt(payment)}>
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="registrations" className="space-y-6">
+          {myRegistrations?.length === 0 ? (
+            <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+               <div className="bg-white p-4 rounded-full inline-block shadow-sm mb-4">
+                  <Calendar className="w-8 h-8 text-slate-300" />
+               </div>
+               <h3 className="text-lg font-bold text-slate-900">No active tickets</h3>
+               <p className="text-slate-500 mb-6 max-w-xs mx-auto">Explore upcoming events and secure your spot today!</p>
+               <Button variant="default" className="font-bold" onClick={() => window.location.href = '#/events'}>Browse Events</Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {myRegistrations?.map((reg) => (
+                <Card key={reg.id} className="group overflow-hidden border-2 hover:border-primary/20 transition-all duration-300 rounded-2xl">
+                   <div className="flex flex-col md:flex-row">
+                      <div className="p-6 flex-1 flex flex-col justify-between">
+                         <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                               <Badge variant="outline" className="text-[10px] font-bold tracking-tighter uppercase">{reg.categoryName || 'General'}</Badge>
+                               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(reg.date).toLocaleDateString()}</span>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors">{reg.title}</h3>
+                            <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                               <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" /> {reg.location}
+                               </div>
+                               <div className="flex items-center gap-1">
+                                  <User className="w-3 h-3" /> By {reg.organizerName}
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                      
+                      <div className="bg-slate-50 p-6 flex flex-row md:flex-col justify-between items-center md:items-end border-t md:border-t-0 md:border-l border-slate-100 gap-4 min-w-[200px]">
+                         <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Entry Type</p>
+                            <p className="font-black text-slate-900">{reg.paymentRequired ? 'Paid Access' : 'Free Pass'}</p>
+                         </div>
+                         <div className="flex gap-2 w-full md:w-auto">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="font-bold border-2 hover:bg-slate-100"
+                              onClick={() => handleDownloadTicket(reg.id)}
+                            >
+                               <Download className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="font-bold text-slate-400 hover:text-destructive hover:bg-destructive/5"
+                              disabled={isCancelling === reg.id}
+                              onClick={() => handleCancelRegistration(reg.id)}
+                            >
+                               <Trash2 className="w-4 h-4" />
+                            </Button>
+                         </div>
+                      </div>
+                   </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal details here.</CardDescription>
-            </CardHeader>
+          <Card className="rounded-3xl border-2">
+            <CardHeader><CardTitle className="text-xl font-black">Personal Information</CardTitle></CardHeader>
             <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md w-full">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Display Name</Label>
-                  <Input id="name" defaultValue={userName} className="w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" defaultValue={email} disabled className="bg-muted w-full" />
-                </div>
-                <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
-              </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Username</Label>
+                      <Input defaultValue={user?.username} className="h-12 border-2 focus-visible:ring-primary rounded-xl font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Email Address</Label>
+                      <Input defaultValue={user?.email} disabled className="h-12 border-2 bg-slate-50 rounded-xl font-bold" />
+                    </div>
+                    <Button size="lg" className="font-bold rounded-xl px-8" onClick={() => toast.success("Feature coming soon")}>Update Profile</Button>
+                 </div>
+                 
+                 <div className="bg-slate-50 p-8 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center gap-4">
+                    <div className="bg-white p-4 rounded-full shadow-sm">
+                       <ShieldCheck className="w-10 h-10 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                       <h4 className="font-bold text-slate-900">Secure Account</h4>
+                       <p className="text-xs text-slate-500 leading-relaxed max-w-[200px]">Your account is verified and protected by industry-standard encryption.</p>
+                    </div>
+                 </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* The Receipt Modal Component */}
-      <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-md rounded-xl">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl sm:text-2xl font-black tracking-tight text-primary">
-              Eventa Receipt
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedReceipt && (
-            <div className="space-y-6 pt-4">
-              <div className="flex justify-between items-center border-b pb-4">
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">Reference Number</p>
-                  <p className="font-mono text-sm sm:text-base font-medium">{selectedReceipt.ref}</p>
-                </div>
-                <div className="text-right space-y-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">Date</p>
-                  <p className="text-sm sm:text-base font-medium">{selectedReceipt.date}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm sm:text-base text-slate-600">Event</span>
-                  <span className="text-sm sm:text-base font-bold text-right ml-4">{selectedReceipt.title}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm sm:text-base text-slate-600">Status</span>
-                  <Badge className="bg-emerald-500 hover:bg-emerald-600">Paid in Full</Badge>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 flex justify-between items-center">
-                <span className="text-sm sm:text-base font-semibold text-slate-700">Total Amount</span>
-                <span className="text-2xl sm:text-3xl font-black text-primary">${selectedReceipt.amount?.toFixed(2)}</span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button variant="outline" className="w-full sm:flex-1 gap-2" onClick={handlePrint}>
-                  <Printer className="w-4 h-4" /> Print
-                </Button>
-                <Button className="w-full sm:flex-1" onClick={() => setSelectedReceipt(null)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
+
+const MapPin = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+);

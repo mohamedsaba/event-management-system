@@ -2,26 +2,37 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-export const usePaymentFlow = () => {
+export const usePaymentFlow = (setBookingResult) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleMessage = (event) => {
-      // SECURITY: In production, uncomment this to reject fake messages
-      // if (event.origin !== "https://accept.paymob.com") return;
+      // SECURITY: Reject messages from unknown origins
+      if (event.origin !== "https://accept.paymob.com") return;
 
-      // Check if the message is actually from our payment gateway
       if (event.data?.type === 'PAYMOB_TRANSACTION_RESULT') {
         setIsProcessing(true);
-        const { success, id } = event.data;
+        // PLAN FIX: use txn_id instead of id
+        const { success, txn_id, amount, eventTitle } = event.data;
+
+        const result = {
+          success,
+          bookingRef: success ? txn_id : null,
+          amount: amount,
+          eventTitle: eventTitle,
+          date: new Date().toLocaleDateString(),
+          errorMessage: success ? null : "Transaction failed"
+        };
+
+        if (setBookingResult) setBookingResult(result);
 
         if (success) {
           toast.success("Payment verified!");
-          navigate('/result', { state: { transactionId: id, success: true }, replace: true });
+          navigate('/result', { replace: true });
         } else {
           toast.error("Payment failed or was canceled.");
-          navigate('/result', { state: { success: false }, replace: true });
+          navigate('/result', { replace: true });
         }
         setIsProcessing(false);
       }
@@ -30,7 +41,7 @@ export const usePaymentFlow = () => {
     window.addEventListener('message', handleMessage);
     
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate]);
+  }, [navigate, setBookingResult]);
 
-  return { isProcessing , setIsProcessing};
+  return { isProcessing, setIsProcessing };
 };

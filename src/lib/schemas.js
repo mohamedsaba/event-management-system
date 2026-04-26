@@ -9,7 +9,7 @@ const passwordSchema = z
   .regex(/[^A-Za-z0-9]/, "Must contain at least one special character");
 
 export const signUpSchema = z.object({
-  name: z.string().min(2, "Name is too short").max(50, "Name is too long"),
+  username: z.string().min(2, "Username is too short").max(50, "Username is too long"),
   email: z.string().email("Please enter a valid business email"),
   password: passwordSchema,
   confirmPassword: z.string()
@@ -24,6 +24,28 @@ export const signInSchema = z.object({
 });
 
 export const profileSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
-  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  username: z.string().min(2, "Username is too short"),
+});
+
+export const eventSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  date: z.string().min(1, "Date is required"), // ISO 8601 datetime
+  location: z.string().min(1, "Location is required"),
+  maxAttendance: z.coerce.number().min(1, "Must be at least 1"),
+  eventStatus: z.enum(["SCHEDULED", "COMPLETED", "CANCELED"]),
+  paymentRequired: z.boolean(),
+  price: z.coerce.number().min(0).optional(), // required if paymentRequired
+  organizerId: z.coerce.number(),
+  categoryId: z.coerce.number(),
+});
+
+export const organizerSchema = z.object({
+  username: z.string().min(2, "Username is too short").max(50, "Username is too long"),
+  email: z.string().email("Invalid email"),
+  password: passwordSchema,
+});
+
+export const categorySchema = z.object({
+  name: z.string().min(1, "Category name is required"),
 });
