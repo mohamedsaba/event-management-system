@@ -3,8 +3,12 @@ import RegisterButton from "../RegisterButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Ticket, User, Tag } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 function EventList({ events }) {
+  const { user } = useAuth();
+  const isAttendee = !user || user.role === 'attendee';
+
   if (!events || events.length === 0) {
     return (
       <p className="text-slate-500 text-center py-12">
@@ -84,7 +88,7 @@ function EventList({ events }) {
                   View Details
                 </Link>
 
-                <RegisterButton event={event} />
+                {isAttendee && <RegisterButton event={event} />}
               </div>
             </div>
           </CardContent>

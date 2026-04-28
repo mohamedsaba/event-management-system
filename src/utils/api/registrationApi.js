@@ -30,9 +30,9 @@ export const registrationApi = {
     return (response.data || []).map(normalizeEvent);
   },
 
-  // ATTENDEE — cancel registration
+  // ATTENDEE — cancel registration (sends userId and eventId in request body)
   cancelRegistration: async (userId, eventId) => {
-    const response = await api.delete('/registrations/cancel', { data: { userId, eventId } });
+    const response = await api.post('/registrations/cancel', { userId, eventId });
     return response.data;
   },
 

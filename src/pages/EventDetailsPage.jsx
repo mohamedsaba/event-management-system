@@ -161,6 +161,7 @@ function EventDetailsPage() {
           </div>
         </div>
 
+        {(!user || user.role === 'attendee') && (
         <div className="space-y-6">
           <Card className="sticky top-24 border-2">
             <CardContent className="p-6 space-y-6">
@@ -202,6 +203,7 @@ function EventDetailsPage() {
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

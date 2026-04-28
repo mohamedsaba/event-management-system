@@ -8,11 +8,31 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize session on mount
+  // Initialize session on mount — try refresh token first, fallback to getMe
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        const savedRefreshToken = localStorage.getItem("refreshToken");
         const savedToken = localStorage.getItem("token");
+
+        if (savedRefreshToken) {
+          // Try to refresh the access token using the refresh token
+          try {
+            const response = await authApi.refreshToken(savedRefreshToken);
+            setToken(response.token);
+            setUser(response.user);
+            localStorage.setItem("token", response.token);
+            if (response.refreshToken) {
+              localStorage.setItem("refreshToken", response.refreshToken);
+            }
+            localStorage.setItem("user", JSON.stringify(response.user));
+            return; // Success — no need to try getMe
+          } catch (refreshError) {
+            console.warn("Refresh token expired, trying access token...", refreshError);
+          }
+        }
+
+        // Fallback: if we have a saved access token, try getMe
         if (savedToken) {
           setToken(savedToken);
           const userData = await authApi.getMe();
@@ -33,12 +53,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authApi.login({ email, password });
-      const { token: newToken, user: userData } = response;
+      const { token: newToken, refreshToken: newRefreshToken, user: userData } = response;
       
       setToken(newToken);
       setUser(userData);
       
       localStorage.setItem("token", newToken);
+      if (newRefreshToken) {
+        localStorage.setItem("refreshToken", newRefreshToken);
+      }
       localStorage.setItem("user", JSON.stringify(userData));
       
       return response;
@@ -50,12 +73,15 @@ export const AuthProvider = ({ children }) => {
   const signup = async (data) => {
     try {
       const response = await authApi.register(data);
-      const { token: newToken, user: userData } = response;
+      const { token: newToken, refreshToken: newRefreshToken, user: userData } = response;
       
       setToken(newToken);
       setUser(userData);
       
       localStorage.setItem("token", newToken);
+      if (newRefreshToken) {
+        localStorage.setItem("refreshToken", newRefreshToken);
+      }
       localStorage.setItem("user", JSON.stringify(userData));
       
       return response;
@@ -68,6 +94,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
   };
 

@@ -95,6 +95,7 @@ export default function AuthPage() {
       }, 150);
 
     } catch (error) {
+      console.error("Login Error details:", error);
       const errorMsg = error.response?.data?.message || "Invalid credentials";
       toast.error(errorMsg, { id: toastId });
 

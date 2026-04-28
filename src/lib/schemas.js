@@ -36,7 +36,7 @@ export const eventSchema = z.object({
   eventStatus: z.enum(["SCHEDULED", "COMPLETED", "CANCELED"]),
   paymentRequired: z.boolean(),
   price: z.coerce.number().min(0).optional(), // required if paymentRequired
-  organizerId: z.coerce.number(),
+  organizerId: z.coerce.number().optional(),
   categoryId: z.coerce.number(),
 });
 

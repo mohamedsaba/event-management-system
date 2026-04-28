@@ -19,6 +19,22 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Rewrite the Origin header to match the backend
+            // This prevents Spring Boot from rejecting it with "Invalid CORS request"
+            proxyReq.setHeader('Origin', 'http://localhost:8088');
+          });
+        }
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
