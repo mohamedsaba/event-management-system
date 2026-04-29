@@ -77,7 +77,7 @@ api.interceptors.response.use(
       try {
         // Call refresh token endpoint directly (avoid circular import)
         const response = await axios.post(
-          `${appConfig.apiUrl}/api/auth/refresh-token`,
+          `${appConfig.apiUrl}/auth/refresh-token`,
           { refreshToken }
         );
 

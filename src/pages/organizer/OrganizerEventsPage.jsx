@@ -140,10 +140,16 @@ export default function OrganizerEventsPage() {
     setIsSubmitting(true);
     const payload = {
       ...data,
-      organizerId: Number(user.id), // Force ownership
+      organizerId: user?.id ? Number(user.id) : undefined,
       categoryId: Number(data.categoryId),
       price: data.paymentRequired ? Number(data.price) : 0
     };
+
+    if (!payload.organizerId) {
+      toast.error("Could not determine organizer identity. Please re-login.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       if (currentEvent) {

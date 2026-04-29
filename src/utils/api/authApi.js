@@ -11,7 +11,7 @@ const normalizeUser = (backendUser) => {
   };
 
   return {
-    id: backendUser.id, // Fixed backendUser.Id to backendUser.id
+    id: backendUser.Id ?? backendUser.id,
     email: backendUser.email,
     role: roleMap[backendUser.role] || backendUser.role.toLowerCase().replace('role_', ''),
     username: backendUser.username || backendUser.email.split('@')[0] // Fallback if username missing

@@ -15,7 +15,7 @@ export const organizerApi = {
   getOrganizers: async () => {
     const response = await api.get('/admin/organizers');
     const payload = response.data;
-    const list = payload.data ?? payload;
+    const list = payload.value ?? payload.data ?? payload;
     return (Array.isArray(list) ? list : []).map(normalizeOrganizer);
   },
 
