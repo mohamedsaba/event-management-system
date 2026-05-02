@@ -11,26 +11,32 @@ const NotificationBell = () => {
   const { user } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const fetchNotifications = async () => {
     if (!user?.id) return;
+    setLoading(true);
     try {
       const data = await notificationApi.getUserNotifications(user.id);
       setNotifications(data || []);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const toggleOpen = () => {
+    const opening = !isOpen;
+    setIsOpen(opening);
+    if (opening) fetchNotifications();
+  };
+
   useEffect(() => {
-    fetchNotifications();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    setNotifications([]);
   }, [user?.id]);
 
   useEffect(() => {
@@ -73,7 +79,7 @@ const NotificationBell = () => {
         variant="ghost"
         size="icon"
         className="relative hover:bg-slate-100 dark:hover:bg-slate-800"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -104,7 +110,11 @@ const NotificationBell = () => {
           <Separator />
           
           <div className="max-h-[400px] overflow-y-auto">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="p-8 text-center text-sm text-slate-500">
+                Loading…
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500">
                 No notifications yet
               </div>
