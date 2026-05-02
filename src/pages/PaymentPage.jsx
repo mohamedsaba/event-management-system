@@ -1,7 +1,6 @@
-import { useContext, useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import { BookingContext } from "@/context/BookingContext"
 import { useEventContext } from "@/context/EventContext"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -9,16 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ShieldCheck, CreditCard, AlertCircle, ArrowLeft, Ticket } from "lucide-react"
-import { usePaymentFlow } from "@/hooks/usePaymentFlow"
 import { paymentApi } from "@/utils/api/paymentApi"
 
 export default function PaymentPage() {
   const { selectedEvent } = useEventContext()
-  const { setBookingResult } = useContext(BookingContext)
   const { user } = useAuth()
   const navigate = useNavigate()
   
-  const { isProcessing: isHookProcessing } = usePaymentFlow(setBookingResult)
   const [isProcessing, setIsProcessing] = useState(false)
   const [iframeUrl, setIframeUrl] = useState(null)
   const [error, setError] = useState(null)
@@ -38,6 +34,9 @@ export default function PaymentPage() {
       try {
         const amountCents = Math.round((selectedEvent.price || 0) * 100);
         const url = await paymentApi.initiatePayment(amountCents, user.id, selectedEvent.id);
+        if (!url) {
+          throw new Error("Missing iframe URL from payment initialization response");
+        }
         setIframeUrl(url);
       } catch (err) {
         console.error("Payment init error:", err);
@@ -87,7 +86,7 @@ export default function PaymentPage() {
             <CardContent className="p-0">
               <div className="min-h-[600px] flex flex-col items-center justify-center bg-slate-50/30 relative">
                 
-                {(isProcessing || isHookProcessing) && !error && (
+                {isProcessing && !error && (
                   <div className="text-center space-y-6 z-10">
                     <div className="relative">
                        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
@@ -95,7 +94,7 @@ export default function PaymentPage() {
                     </div>
                     <div className="space-y-2">
                       <p className="text-lg font-bold text-slate-900">
-                        {isHookProcessing ? "Verifying Transaction" : "Connecting to Secure Server"}
+                        Connecting to Secure Server
                       </p>
                       <p className="text-sm text-slate-500">Please do not close or refresh this page.</p>
                     </div>

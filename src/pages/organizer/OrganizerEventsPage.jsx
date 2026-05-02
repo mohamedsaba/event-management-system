@@ -77,26 +77,35 @@ export default function OrganizerEventsPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const [allEvents, categoriesData] = await Promise.all([
+      const [eventsResult, categoriesResult] = await Promise.allSettled([
         eventsApi.getEvents(),
         categoryApi.getCategories()
       ]);
-      
-      const myEvents = allEvents.filter(e => Number(e.organizerId) === Number(user.id));
-      setEvents(myEvents);
-      setCategories(categoriesData);
 
-      const counts = {};
-      await Promise.all(myEvents.map(async (e) => {
-        try {
-          counts[e.id] = await registrationApi.getEventRegistrationCount(e.id);
-        } catch (err) {
-          counts[e.id] = 0;
-        }
-      }));
-      setRegCounts(counts);
-    } catch (error) {
-      toast.error("Failed to load your events");
+      if (categoriesResult.status === "fulfilled") {
+        setCategories(categoriesResult.value);
+      } else {
+        setCategories([]);
+      }
+
+      if (eventsResult.status === "fulfilled") {
+        const allEvents = eventsResult.value;
+        const myEvents = allEvents.filter(e => Number(e.organizerId) === Number(user.id));
+        setEvents(myEvents);
+
+        const counts = {};
+        await Promise.all(myEvents.map(async (e) => {
+          try {
+            counts[e.id] = await registrationApi.getEventRegistrationCount(e.id);
+          } catch (err) {
+            counts[e.id] = 0;
+          }
+        }));
+        setRegCounts(counts);
+      } else {
+        setEvents([]);
+        setRegCounts({});
+      }
     } finally {
       setLoading(false);
     }

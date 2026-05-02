@@ -92,16 +92,17 @@ export default function AdminEventsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [eventsData, categoriesData, organizersData] = await Promise.all([
+      const [eventsRes, categoriesRes, organizersRes] = await Promise.allSettled([
         eventsApi.getEvents(),
         categoryApi.getCategories(),
         organizerApi.getOrganizers()
       ]);
-      setEvents(eventsData);
-      setCategories(categoriesData);
-      setOrganizers(organizersData);
 
-      // Fetch registration counts for each event
+      const eventsData = eventsRes.status === "fulfilled" ? eventsRes.value : [];
+      setEvents(eventsData);
+      setCategories(categoriesRes.status === "fulfilled" ? categoriesRes.value : []);
+      setOrganizers(organizersRes.status === "fulfilled" ? organizersRes.value : []);
+
       const counts = {};
       await Promise.all(eventsData.map(async (e) => {
         try {
@@ -111,8 +112,6 @@ export default function AdminEventsPage() {
         }
       }));
       setRegCounts(counts);
-    } catch (error) {
-      toast.error("Failed to load management data");
     } finally {
       setLoading(false);
     }

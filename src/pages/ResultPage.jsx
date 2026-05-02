@@ -32,20 +32,40 @@ export default function ResultPage() {
     }
 
     // 2. Try URL params (from Paymob redirect)
-    // Paymob appends params like ?success=true&txn_id=... to the redirect URL
-    // In HashRouter, this might be inside the hash: #/result?success=true...
+    // Paymob redirect params may appear in location.search or HashRouter hash.
     const hash = window.location.hash;
-    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
-    const params = new URLSearchParams(queryString);
+    const hashQueryString = hash.includes("?") ? hash.split("?")[1] : "";
+    const mergedParams = new URLSearchParams(location.search);
+    const hashParams = new URLSearchParams(hashQueryString);
 
-    if (params.has('success') || params.has('id')) {
+    for (const [key, value] of hashParams.entries()) {
+      if (!mergedParams.has(key)) {
+        mergedParams.set(key, value);
+      }
+    }
+
+    const successParam = mergedParams.get("success");
+    const isSuccess =
+      successParam === "true" ||
+      successParam === "1" ||
+      mergedParams.get("status") === "success";
+    const transactionId =
+      mergedParams.get("txn_id") ||
+      mergedParams.get("id") ||
+      mergedParams.get("transaction_id");
+
+    if (successParam !== null || transactionId) {
       setResult({
-        success: params.get('success') === 'true',
-        bookingRef: params.get('txn_id') || params.get('id'),
-        amount: params.get('amount') ? params.get('amount') / 100 : 0,
+        success: isSuccess,
+        bookingRef: transactionId,
+        amount: mergedParams.get("amount_cents")
+          ? Number(mergedParams.get("amount_cents")) / 100
+          : mergedParams.get("amount")
+          ? Number(mergedParams.get("amount")) / 100
+          : 0,
         eventTitle: "Your Registered Event",
         date: new Date().toLocaleDateString(),
-        errorMessage: params.get('message') || "Transaction failed"
+        errorMessage: mergedParams.get("message") || "Transaction failed"
       });
     }
   }, [bookingResult, location]);
