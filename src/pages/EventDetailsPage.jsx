@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,21 @@ import { Badge } from "@/components/ui/badge";
 function EventDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setSelectedEvent } = useEventContext();
   const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [celebratePaidOpen, setCelebratePaidOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.paymentSuccess !== true) return;
+    navigate(`/events/${id}`, { replace: true, state: null });
+    toast.success("Payment confirmed! You are registered for this event.", { duration: 5000 });
+    setCelebratePaidOpen(true);
+  }, [id, location.state?.paymentSuccess, navigate]);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -205,6 +214,29 @@ function EventDetailsPage() {
         </div>
         )}
       </div>
+
+      <AlertDialog open={celebratePaidOpen} onOpenChange={setCelebratePaidOpen}>
+        <AlertDialogContent className="rounded-3xl border-none shadow-2xl max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+              Registration complete
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-medium text-slate-600 pt-2 text-base leading-relaxed">
+              Your payment was successful.{event?.title ? ` You are registered for "${event.title}".` : ""}{" "}
+              You can manage your booking from your dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogAction
+              onClick={() => setCelebratePaidOpen(false)}
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl px-8"
+            >
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
