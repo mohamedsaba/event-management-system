@@ -15,7 +15,8 @@ import {
 import { useBooking } from "@/hooks/useBooking"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { PAYMENT_RETURN_EVENT_ID_KEY } from "@/constants/payment"
+import { PAYMENT_RETURN_EVENT_ID_KEY, PAYMENT_RETURN_PATH_KEY } from "@/constants/payment"
+import { useEventContext } from "@/context/EventContext"
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -53,6 +54,7 @@ function resolveEventId(mergedParams) {
 
 export default function ResultPage() {
   const { bookingResult, setBookingResult } = useBooking()
+  const { returnPath, setReturnPath } = useEventContext()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -93,15 +95,16 @@ export default function ResultPage() {
     })
 
     const finishSuccessRedirect = () => {
+      const savedReturnPath = sessionStorage.getItem(PAYMENT_RETURN_PATH_KEY) || returnPath;
       sessionStorage.removeItem(PAYMENT_RETURN_EVENT_ID_KEY)
+      sessionStorage.removeItem(PAYMENT_RETURN_PATH_KEY)
+      setReturnPath(null)
       setBookingResult(null)
+      
       const eventId = resolveEventId(mergedParams)
-      if (eventId) {
-        navigate(`/events/${eventId}`, { replace: true, state: { paymentSuccess: true } })
-      } else {
-        toast.success("Payment successful! Your booking is confirmed.")
-        navigate("/dashboard", { replace: true })
-      }
+      const targetPath = savedReturnPath || (eventId ? `/events/${eventId}` : "/dashboard");
+      
+      navigate(targetPath, { replace: true, state: { paymentSuccess: true } })
       setResolution("redirected")
     }
 

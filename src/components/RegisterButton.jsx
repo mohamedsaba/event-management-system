@@ -51,6 +51,8 @@ function RegisterButton({ event }) {
 
     if (!isFree) {
       setSelectedEvent(event);
+      // If we are in the list, returning to /events is better than current location if we want to be specific
+      setReturnPath(window.location.hash.includes('/events/') ? window.location.hash.replace('#', '') : "/events");
       navigate("/register");
     }
   };

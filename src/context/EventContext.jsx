@@ -11,6 +11,9 @@ export function EventProvider({ children }) {
     const saved = localStorage.getItem("registration_data");
     return saved ? JSON.parse(saved) : null;
   });
+  const [returnPath, setReturnPath] = useState(() => {
+    return localStorage.getItem("return_path") || null;
+  });
 
   useEffect(() => {
     if (selectedEvent) localStorage.setItem("selected_event", JSON.stringify(selectedEvent));
@@ -22,11 +25,18 @@ export function EventProvider({ children }) {
     else localStorage.removeItem("registration_data");
   }, [registrationData]);
 
+  useEffect(() => {
+    if (returnPath) localStorage.setItem("return_path", returnPath);
+    else localStorage.removeItem("return_path");
+  }, [returnPath]);
+
   const clearRegistration = () => {
     setSelectedEvent(null);
     setRegistrationData(null);
+    setReturnPath(null);
     localStorage.removeItem("selected_event");
     localStorage.removeItem("registration_data");
+    localStorage.removeItem("return_path");
   };
 
   return (
@@ -36,6 +46,8 @@ export function EventProvider({ children }) {
         setSelectedEvent,
         registrationData,
         setRegistrationData,
+        returnPath,
+        setReturnPath,
         clearRegistration
       }}
     >

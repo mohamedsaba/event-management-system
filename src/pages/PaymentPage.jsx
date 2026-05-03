@@ -9,10 +9,10 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ShieldCheck, CreditCard, AlertCircle, ArrowLeft, Ticket } from "lucide-react"
 import { paymentApi } from "@/utils/api/paymentApi"
-import { PAYMENT_RETURN_EVENT_ID_KEY } from "@/constants/payment"
+import { PAYMENT_RETURN_EVENT_ID_KEY, PAYMENT_RETURN_PATH_KEY } from "@/constants/payment"
 
 export default function PaymentPage() {
-  const { selectedEvent } = useEventContext()
+  const { selectedEvent, returnPath } = useEventContext()
   const { user } = useAuth()
   const navigate = useNavigate()
   
@@ -34,6 +34,9 @@ export default function PaymentPage() {
       setIsProcessing(true)
       try {
         sessionStorage.setItem(PAYMENT_RETURN_EVENT_ID_KEY, String(selectedEvent.id))
+        if (returnPath) {
+          sessionStorage.setItem(PAYMENT_RETURN_PATH_KEY, returnPath);
+        }
         const amountCents = Math.round((selectedEvent.price || 0) * 100);
         const url = await paymentApi.initiatePayment(amountCents, user.id, selectedEvent.id);
         if (!url) {

@@ -85,6 +85,8 @@ function EventDetailsPage() {
       return;
     } else {
       setSelectedEvent(event);
+      // Capture the current path as the return path after payment
+      setReturnPath(location.pathname);
       navigate("/register");
     }
   };
