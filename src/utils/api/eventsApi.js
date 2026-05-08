@@ -4,18 +4,18 @@ const normalizeEvent = (event) => {
   if (!event) return null;
   return {
     id: event.id || event.Id,
-    title: event.title,
-    description: event.description,
-    location: event.location,
+    title: event.title || "",
+    description: event.description || "",
+    location: event.location || "",
     date: event.date,
-    price: event.price,
-    maxAttendance: event.maxAttendance,
-    paymentRequired: event.paymentRequired,
-    eventStatus: event.eventStatus,
-    organizerId: event.organizerId,
-    organizerName: event.organizerName,
-    categoryId: event.categoryId,
-    categoryName: event.categoryName,
+    price: event.price || 0,
+    maxAttendance: event.maxAttendance || 0,
+    paymentRequired: !!event.paymentRequired,
+    eventStatus: event.eventStatus || "SCHEDULED",
+    organizerId: event.organizerId || event.organizer?.id || event.organizer?.Id,
+    organizerName: event.organizerName || event.organizer?.username || event.organizer?.name || "Organizer",
+    categoryId: event.categoryId || event.category?.id || event.category?.Id,
+    categoryName: event.categoryName || event.category?.name || "General",
   };
 };
 

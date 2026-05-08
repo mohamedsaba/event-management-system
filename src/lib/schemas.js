@@ -37,7 +37,7 @@ export const eventSchema = z.object({
   paymentRequired: z.boolean(),
   price: z.coerce.number().min(0).optional(), // required if paymentRequired
   organizerId: z.coerce.number().optional(),
-  categoryId: z.coerce.number(),
+  categoryId: z.coerce.number().min(1, "Please select a valid category"),
 });
 
 export const organizerSchema = z.object({

@@ -30,7 +30,11 @@ export default function OrganizerDashboardPage() {
       try {
         const allEvents = await eventsApi.getEvents();
         // Filter events owned by this organizer
-        const myEvents = allEvents.filter(e => Number(e.organizerId) === Number(user.id));
+        const myEvents = allEvents.filter(e => {
+          const eOrgId = e.organizerId;
+          const uId = user.id;
+          return eOrgId && uId && String(eOrgId) === String(uId);
+        });
         
         // Fetch registration counts for each of my events
         let totalRegs = 0;

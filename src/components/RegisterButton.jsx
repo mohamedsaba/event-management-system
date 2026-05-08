@@ -20,7 +20,7 @@ import { Loader2 } from "lucide-react";
 function RegisterButton({ event }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setSelectedEvent } = useEventContext();
+  const { setSelectedEvent, setReturnPath } = useEventContext();
   const [isRegistering, setIsRegistering] = useState(false);
 
   const isFree = !event.paymentRequired;

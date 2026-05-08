@@ -68,7 +68,7 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpenState] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentEvent, setCurrentEvent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -127,14 +127,14 @@ export default function AdminEventsPage() {
       form.reset({
         title: event.title,
         description: event.description || "",
-        date: event.date,
+        date: event.date ? event.date.substring(0, 16) : "",
         location: event.location,
         price: event.price || 0,
         maxAttendance: event.maxAttendance,
         eventStatus: event.eventStatus,
         paymentRequired: event.paymentRequired,
-        organizerId: String(event.organizerId),
-        categoryId: String(event.categoryId)
+        organizerId: event.organizerId ? String(event.organizerId) : "",
+        categoryId: event.categoryId ? String(event.categoryId) : ""
       });
     } else {
       form.reset({
@@ -155,10 +155,10 @@ export default function AdminEventsPage() {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
+    const payloadDate = data.date.length === 16 ? `${data.date}:00` : data.date;
     const payload = {
       ...data,
-      organizerId: Number(data.organizerId),
-      categoryId: Number(data.categoryId),
+      date: payloadDate,
       price: data.paymentRequired ? Number(data.price) : 0
     };
 
@@ -181,7 +181,7 @@ export default function AdminEventsPage() {
 
   const confirmDelete = (event) => {
     setEventToDelete(event);
-    setIsDeleteDialogOpenState(true);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleDelete = async () => {
@@ -189,7 +189,7 @@ export default function AdminEventsPage() {
     try {
       await eventsApi.deleteEvent(eventToDelete.id);
       toast.success("Event removed forever");
-      setIsDeleteDialogOpenState(false);
+      setIsDeleteDialogOpen(false);
       fetchData();
     } catch (error) {
       toast.error("Failed to delete event");
@@ -368,7 +368,7 @@ export default function AdminEventsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase tracking-widest text-slate-400">Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="h-12 border-2 rounded-xl font-bold">
                             <SelectValue placeholder="Select Category" />
@@ -390,7 +390,7 @@ export default function AdminEventsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase tracking-widest text-slate-400">Organizer</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="h-12 border-2 rounded-xl font-bold">
                             <SelectValue placeholder="Assign Organizer" />
@@ -465,7 +465,7 @@ export default function AdminEventsPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpenState}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black flex items-center gap-2 text-red-600">

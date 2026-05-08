@@ -90,7 +90,16 @@ export default function OrganizerEventsPage() {
 
       if (eventsResult.status === "fulfilled") {
         const allEvents = eventsResult.value;
-        const myEvents = allEvents.filter(e => Number(e.organizerId) === Number(user.id));
+        if (import.meta.env.DEV) {
+          console.log("OrganizerEventsPage: User ID:", user.id);
+          console.log("OrganizerEventsPage: Fetched Events:", allEvents.length);
+          console.log("OrganizerEventsPage: Sample Event Organizer ID:", allEvents[0]?.organizerId);
+        }
+        const myEvents = allEvents.filter(e => {
+          const eOrgId = e.organizerId;
+          const uId = user.id;
+          return eOrgId && uId && String(eOrgId) === String(uId);
+        });
         setEvents(myEvents);
 
         const counts = {};
@@ -121,13 +130,13 @@ export default function OrganizerEventsPage() {
       form.reset({
         title: event.title,
         description: event.description || "",
-        date: event.date,
+        date: event.date ? event.date.substring(0, 16) : "",
         location: event.location,
         price: event.price || 0,
         maxAttendance: event.maxAttendance,
         eventStatus: event.eventStatus,
         paymentRequired: event.paymentRequired,
-        categoryId: String(event.categoryId)
+        categoryId: event.categoryId ? String(event.categoryId) : ""
       });
     } else {
       form.reset({
@@ -147,10 +156,11 @@ export default function OrganizerEventsPage() {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
+    const payloadDate = data.date.length === 16 ? `${data.date}:00` : data.date;
     const payload = {
       ...data,
+      date: payloadDate,
       organizerId: user?.id ? Number(user.id) : undefined,
-      categoryId: Number(data.categoryId),
       price: data.paymentRequired ? Number(data.price) : 0
     };
 
@@ -178,9 +188,10 @@ export default function OrganizerEventsPage() {
   };
 
   const filteredEvents = useMemo(() => {
+    const term = (searchTerm || "").toLowerCase();
     return events.filter(e => 
-      e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.location.toLowerCase().includes(searchTerm.toLowerCase())
+      (e.title || "").toLowerCase().includes(term) ||
+      (e.location || "").toLowerCase().includes(term)
     );
   }, [events, searchTerm]);
 
@@ -342,7 +353,7 @@ export default function OrganizerEventsPage() {
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Industry Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="h-12 border-2 rounded-xl font-bold">
                             <SelectValue placeholder="Select Category" />

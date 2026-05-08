@@ -34,13 +34,15 @@ export const AuthProvider = ({ children }) => {
 
         // Fallback: if we have a saved access token, try getMe
         if (savedToken) {
+          console.log("AuthContext: Restoring session with token...");
           setToken(savedToken);
           const userData = await authApi.getMe();
+          console.log("AuthContext: restoreSession success:", userData);
           setUser(userData);
           localStorage.setItem("user", JSON.stringify(userData));
         }
       } catch (error) {
-        console.error("Failed to restore session:", error);
+        console.error("AuthContext: Failed to restore session:", error);
         logout();
       } finally {
         setLoading(false);
@@ -52,9 +54,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log("AuthContext: Attempting login for:", email);
       const response = await authApi.login({ email, password });
       const { token: newToken, refreshToken: newRefreshToken, user: userData } = response;
       
+      console.log("AuthContext: Login successful, setting user:", userData);
       setToken(newToken);
       setUser(userData);
       
@@ -66,6 +70,7 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
+      console.error("AuthContext: Login failed:", error);
       throw error;
     }
   };

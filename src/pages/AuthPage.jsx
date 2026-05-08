@@ -24,13 +24,14 @@ export default function AuthPage() {
   const [attempts, setAttempts] = useState(0);
   const [lockUntil, setLockUntil] = useState(null);
   const isLocked = lockUntil !== null && lockUntil > Date.now();
-  const { login, signup, user } = useAuth();
+  const { login, signup, user, loading } = useAuth();
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Redirect if already logged in
+  // Redirect once user state is ready — this fires AFTER AuthContext re-renders
+  // with the new user, guaranteeing ProtectedRoute sees user !== null.
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       const fallbackMap = {
         'admin': '/admin/dashboard',
         'organizer': '/organizer/dashboard',
@@ -39,7 +40,7 @@ export default function AuthPage() {
       const from = location.state?.from?.pathname || fallbackMap[user.role] || "/dashboard";
       navigate(from, { replace: true });
     }
-  }, [user, navigate, location]);
+  }, [user, loading, navigate, location]);
 
   useEffect(() => {
     if (!lockUntil) return;
@@ -76,24 +77,15 @@ export default function AuthPage() {
 
     try {
       const response = await login(data.email, data.password);
-      const user = response.user;
-      
+      const loggedInUser = response.user;
+
       setAttempts(0);
       setLockUntil(null);
-      
-      toast.success(`Welcome back, ${user.username || user.email}!`, { id: toastId });
 
-      const fallbackMap = {
-        'admin': '/admin/dashboard',
-        'organizer': '/organizer/dashboard',
-        'attendee': '/dashboard'
-      };
-      const from = location.state?.from?.pathname || fallbackMap[user.role] || "/dashboard";
-      
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 150);
-
+      toast.success(`Welcome back, ${loggedInUser.username || loggedInUser.email}!`, { id: toastId });
+      // DO NOT navigate() here — AuthContext.setUser() is async (React state).
+      // ProtectedRoute would still see user=null and redirect back to /auth.
+      // The useEffect above watches `user` and navigates after the re-render.
     } catch (error) {
       console.error("Login Error details:", error);
       const errorMsg = error.response?.data?.message || "Invalid credentials";
@@ -113,21 +105,13 @@ export default function AuthPage() {
   const onSignUpSubmit = async (data) => {
     const toastId = toast.loading("Creating your account...");
     try {
-      const response = await signup({
+      await signup({
         username: data.username,
         email: data.email,
         password: data.password
       });
       toast.success("Account created successfully!", { id: toastId });
-      
-      const user = response.user;
-      const fallbackMap = {
-        'admin': '/admin/dashboard',
-        'organizer': '/organizer/dashboard',
-        'attendee': '/dashboard'
-      };
-      const from = location.state?.from?.pathname || fallbackMap[user.role] || "/dashboard";
-      navigate(from, { replace: true });
+      // Navigation is handled by the useEffect above that watches `user`.
     } catch (error) {
       toast.error("Signup failed. " + (error.response?.data?.message || ""), { id: toastId });
     }
