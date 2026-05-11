@@ -88,7 +88,7 @@ export default function OrganizerEventsPage() {
         setCategories([]);
       }
 
-      if (eventsResult.status === "fulfilled") {
+      if (eventsResult.status === "fulfilled" || true) {
         const allEvents = eventsResult.value;
         if (import.meta.env.DEV) {
           console.log("OrganizerEventsPage: User ID:", user.id);
