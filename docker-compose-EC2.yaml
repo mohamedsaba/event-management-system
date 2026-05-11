@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: youssefmohed/venuvamicroservices-frontend   # pulled from Docker Hub
+    container_name: frontend-app
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true
